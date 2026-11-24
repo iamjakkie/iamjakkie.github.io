@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jakkie · navigation & estimation</title>
+<meta name="description" content="jakkie builds navigation for drones that can't trust GPS. Rust, estimation, and an uncertainty ellipse that is doing its best.">
+<meta property="og:title" content="jakkie · navigation & estimation">
+<meta property="og:description" content="Navigation for drones that can't trust GPS. Position: known, roughly.">
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700,800&f[]=switzer@400,500,600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="bar">
+  <div class="wrap bar__in">
+    <a class="mark" href="#top" aria-label="jakkie, back to top">jakkie<span class="mark__sub">/ GNC</span></a>
+    <nav aria-label="Primary">
+      <a href="#estimate">Estimate</a>
+      <a href="#about">About</a>
+      <a href="#status">Status</a>
+      <a href="#log">Log</a>
+      <a href="#comms">Comms</a>
+    </nav>
+    <div class="met mono" aria-live="off">
+      <span class="met__k">T+ since last calibration</span>
+      <span class="met__v" id="met">---</span>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero wrap" id="top">
+    <p class="doc mono">DOC JKK-TM-001 · REV C · DISTRIBUTION: UNLIMITED (NOBODY ASKED)</p>
+    <h1>Knowing where things are when GPS stops helping.</h1>
+    <div class="hero__row">
+      <p class="lede">Inertial navigation, sensor fusion and cooperative localisation for small drones. Written in Rust, checked against the maths, and judged on one question: can you trust the estimate?</p>
+      <dl class="spec mono">
+        <div><dt>Accuracy</dt><dd>±1.3 m</dd></div>
+        <div><dt>Confidence</dt><dd>questionable</dd></div>
+        <div><dt>Operator</dt><dd>jakkie</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="est" id="estimate" aria-labelledby="est-h">
+    <div class="wrap est__grid">
+      <div class="est__copy">
+        <p class="kicker mono">FIG. 1 · LIVE</p>
+        <h2 id="est-h">Dead reckoning, honestly displayed.</h2>
+        <p>This is a position estimate with no GPS. The dot is where the filter thinks I am. The ellipse is how much it should be believed. Watch it.</p>
+        <dl class="read mono">
+          <div><dt>σ position</dt><dd id="r-sigma">1.3 m</dd></div>
+          <div><dt>NEES</dt><dd id="r-nees">2.9</dd></div>
+          <div><dt>Location</dt><dd id="r-where">the garden</dd></div>
+          <div><dt>Filter</dt><dd id="r-state" class="ok">NOMINAL</dd></div>
+        </dl>
+        <div class="btns">
+          <button class="btn" id="fix" type="button">Get a GPS fix</button>
+          <button class="btn btn--ghost" id="pause" type="button" aria-pressed="false">Pause</button>
+        </div>
+        <p class="note mono" id="note" role="status"></p>
+      </div>
+      <figure class="scope">
+        <canvas id="scope" width="720" height="560" aria-label="Animated position estimate with a growing uncertainty ellipse"></canvas>
+        <figcaption class="mono"><span id="scale">scale: 1 m</span><span>frame: local, allegedly ENU</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="about wrap" id="about" aria-labelledby="about-h">
+    <p class="kicker mono">§2 · OPERATOR</p>
+    <h2 id="about-h">Short version.</h2>
+    <div class="about__cols">
+      <p>I build navigation for drones that can't trust GPS. I'm also doing a PhD on it, which is the same problem with more paperwork and fewer propellers.</p>
+      <p>Mostly Rust, because I like my bugs caught at compile time and my segfaults theoretical. I write the maths by hand until it stops lying to me. Before this: years of data infrastructure, which is why I still think every problem is a time series. I'm usually right.</p>
+      <p>Nothing here is a product page. Things get shown when they work. Not when they compile. When they work.</p>
+    </div>
+  </section>
+
+  <section class="status" id="status" aria-labelledby="status-h">
+    <div class="wrap">
+      <p class="kicker mono">§3 · SUBSYSTEMS</p>
+      <h2 id="status-h">Status board.</h2>
+      <table class="tbl mono">
+        <thead><tr><th scope="col">Subsystem</th><th scope="col">Value</th><th scope="col">State</th><th scope="col">Remarks</th></tr></thead>
+        <tbody>
+          <tr><td>IMU</td><td>153 Hz</td><td><span class="pill pill--warn">DEGRADED</span></td><td>asked for 200</td></tr>
+          <tr><td>GNSS</td><td>FIX</td><td><span class="pill pill--ok">NOMINAL</span></td><td>when outdoors and the sky cooperates</td></tr>
+          <tr><td>Estimator</td><td>converging</td><td><span class="pill pill--ok">NOMINAL</span></td><td>allegedly</td></tr>
+          <tr><td>Calibration</td><td>pending</td><td><span class="pill pill--warn">DEGRADED</span></td><td>see header counter</td></tr>
+          <tr><td>Coffee</td><td>2.4 L/day</td><td><span class="pill pill--ok">NOMINAL</span></td><td>load-bearing</td></tr>
+          <tr><td>Sleep</td><td>5.1 h</td><td><span class="pill pill--bad">FAULT</span></td><td>scheduled for after the PhD</td></tr>
+          <tr><td>Free time</td><td>—</td><td><span class="pill pill--bad">404</span></td><td>not found</td></tr>
+          <tr><td>Fucks given</td><td>0.0</td><td><span class="pill pill--ok">NOMINAL</span></td><td>within tolerance</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="log wrap" id="log" aria-labelledby="log-h">
+    <p class="kicker mono">§4 · FLIGHT LOG</p>
+    <h2 id="log-h">Log.</h2>
+    <ol class="entries">
+      <li>
+        <time class="mono" datetime="2026-08-30">2026-08-30</time>
+        <div><h3>Filter placed the drone several hundred kilometres away.</h3><p>The drone was within a 9 × 9 m patch of field at the time. 38,573 IMU samples, clean GPS, and total confidence in the wrong answer. Calibration is now a priority.</p></div>
+      </li>
+      <li>
+        <time class="mono" datetime="2026-11-24">2026-11-24</time>
+        <div><h3>Archived 68 repositories.</h3><p>Mostly crypto. We don't talk about it.</p></div>
+      </li>
+      <li class="entries__more">
+        <span class="mono">NEXT ENTRY</span>
+        <p>When something works.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="comms wrap" id="comms" aria-labelledby="comms-h">
+    <p class="kicker mono">§5 · COMMS</p>
+    <h2 id="comms-h">Comms window: open.</h2>
+    <p>Response latency: eventually. Uplink below.</p>
+    <a class="uplink mono" href="https://github.com/iamjakkie">github.com/iamjakkie <span aria-hidden="true">→</span></a>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot__in mono">
+    <span>© 2026 jakkie · no satellites were harmed</span>
+    <button class="abort" id="abort" type="button">ABORT MISSION</button>
+  </div>
+</footer>
+
+<div class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-h" hidden>
+  <div class="dlg__box">
+    <p class="mono dlg__code">ERR 0x4A4B · ABORT REJECTED</p>
+    <h2 id="dlg-h">Abort denied.</h2>
+    <p id="dlg-t">Insufficient permissions. The mission is not optional.</p>
+    <button class="btn" id="dlg-close" type="button">Understood</button>
+  </div>
+</div>
+
+<script src="app.js" defer></script>
+</body>
+</html>
